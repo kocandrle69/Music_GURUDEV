@@ -15,15 +15,18 @@
 <meta name="theme-color" content="#0d0b12">
 <style>
   :root {
-    --bg: #0d0b12;
-    --bg-elev: rgba(255,255,255,0.06);
-    --text: #f2eee8;
-    --text-dim: rgba(242,238,232,0.38);
-    --text-mid: rgba(242,238,232,0.60);
-    --accent: #e8b04b;
-    --accent-soft: rgba(232,176,75,0.14);
-    --refrain: rgba(232,176,75,0.75);
-    --line-h: 1.55;
+    /* paleta vytazena primo z obalky */
+    --gold:        #F0C078;
+    --gold-deep:   #F0A830;
+    --gold-dark:   #784818;
+    --gold-light:  #F5E3B8;
+
+    --bg:          #0c0a10;
+    --text:        #f4f0ea;
+
+    --glass:       rgba(28, 21, 14, 0.28);
+    --glass-edge:  rgba(255, 255, 255, 0.12);
+    --glass-lip:   rgba(255, 255, 255, 0.22);
   }
 
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -35,193 +38,446 @@
     color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   body {
     background:
-      radial-gradient(900px 600px at 50% -10%, rgba(232,176,75,0.16), transparent 62%),
-      radial-gradient(700px 500px at 50% 105%, rgba(232,176,75,0.07), transparent 60%),
+      radial-gradient(780px 620px at 22% 12%,  rgba(240,168,48,0.15), transparent 62%),
+      radial-gradient(680px 540px at 18% 88%,  rgba(120,72,24,0.20),  transparent 60%),
+      radial-gradient(900px 700px at 80% 50%,  rgba(240,192,120,0.05), transparent 66%),
       var(--bg);
     background-attachment: fixed;
     min-height: 100vh;
   }
 
-  /* ---------- Player (sticky) ---------- */
-  .player {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    padding: 14px 20px 12px;
-    padding-top: max(14px, env(safe-area-inset-top));
-    background: rgba(13,11,18,0.74);
-    backdrop-filter: saturate(180%) blur(24px);
-    -webkit-backdrop-filter: saturate(180%) blur(24px);
-    border-bottom: 1px solid rgba(232,176,75,0.14);
+  /* ---------- NOISE ---------- */
+  /* Bez zrna vypadaji gradienty digitalne. SVG turbulence = zadny extra soubor. */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0.042;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
-  .player-inner {
-    max-width: 640px;
-    margin: 0 auto;
+  /* ================= LAYOUT ================= */
+  .stage {
+    display: grid;
+    grid-template-columns: 42vw 1fr;
+    min-height: 100vh;
+  }
+
+  /* ---------- LEVY PANEL: SKLO ---------- */
+  .art {
+    position: sticky;
+    top: 0;
+    height: 100vh;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 14px;
+    justify-content: center;
+    gap: 30px;
+    padding: 44px 46px;
+    overflow: hidden;
+    isolation: isolate;
+
+    background: var(--glass);
+    backdrop-filter: blur(36px) saturate(180%);
+    -webkit-backdrop-filter: blur(36px) saturate(180%);
+    border-right: 1px solid var(--glass-edge);
+    box-shadow: inset 1px 0 0 rgba(255,255,255,0.06);
+  }
+
+  /* rozostrena obalka jako podklad */
+  .art::before {
+    content: '';
+    position: absolute;
+    inset: -14%;
+    z-index: -2;
+    background: url('Gurudev_Album.png') center/cover no-repeat;
+    filter: blur(56px) saturate(160%) brightness(0.58);
+    opacity: 0.58;
+  }
+
+  /* VisionOS svetelna hrana — iluze tlusteho skla */
+  .art::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.16), transparent 34%),
+      radial-gradient(72% 62% at 50% 42%, transparent 0%, rgba(12,10,16,0.44) 100%);
+  }
+
+  /* ---------- COVER ---------- */
+  .cover-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 372px;
+    display: flex;
+  }
+
+  /* zlata zare za obalkou */
+  .cover-wrap::before {
+    content: '';
+    position: absolute;
+    inset: -46px;
+    z-index: 0;
+    background: radial-gradient(circle, rgba(240,168,48,0.26), transparent 68%);
+    filter: blur(42px);
+    pointer-events: none;
   }
 
   .cover {
-    width: 62px;
-    height: 62px;
-    flex: 0 0 62px;
-    border-radius: 8px;
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    aspect-ratio: 1;
     object-fit: cover;
+    border-radius: 22px;
+    border: 1px solid rgba(255,255,255,0.16);
     box-shadow:
-      0 3px 14px rgba(0,0,0,0.5),
-      0 0 0 1px rgba(232,176,75,0.22);
+      0 40px 110px rgba(0,0,0,0.58),
+      0 8px 28px  rgba(0,0,0,0.40),
+      0 0 76px    rgba(240,168,48,0.20),
+      inset 0 1px 0 rgba(255,255,255,0.22);
   }
 
-  .meta {
-    flex: 1;
-    min-width: 0;
-  }
+  .meta { width: 100%; max-width: 372px; text-align: center; }
 
   .title {
-    font-size: 15px;
+    font-size: 22px;
     font-weight: 600;
-    letter-spacing: 0.01em;
-    margin: 0 0 2px;
+    letter-spacing: 0.005em;
+    margin: 0 0 6px;
   }
 
   .subtitle {
-    font-size: 11px;
-    color: var(--accent);
-    opacity: 0.72;
-    margin: 0 0 9px;
-    letter-spacing: 0.10em;
+    font-size: 10px;
+    color: var(--gold);
+    opacity: 0.80;
+    margin: 0 0 22px;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    font-weight: 500;
+    font-weight: 600;
   }
 
-  audio {
+  /* ---------- VLASTNI PREHRAVAC ---------- */
+  .player {
     width: 100%;
-    height: 32px;
-    display: block;
+    max-width: 372px;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+
+    padding: 11px 15px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.07);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255,255,255,0.13);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.18),
+      0 6px 22px rgba(0,0,0,0.30);
   }
 
-  @media (max-width: 460px) {
-    .cover { width: 52px; height: 52px; flex-basis: 52px; }
-    .title { font-size: 14px; }
-    .player-inner { gap: 12px; }
+  .play {
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+
+    background: linear-gradient(160deg, var(--gold-light), var(--gold-deep));
+    box-shadow:
+      0 2px 10px rgba(240,168,48,0.42),
+      inset 0 1px 0 rgba(255,255,255,0.55);
+    transition: transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .2s ease;
+  }
+  .play:hover  { transform: scale(1.07); box-shadow: 0 3px 16px rgba(240,168,48,0.58), inset 0 1px 0 rgba(255,255,255,0.6); }
+  .play:active { transform: scale(0.95); }
+  .play svg    { display: block; fill: #23180a; }
+
+  .bar {
+    flex: 1;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    min-width: 0;
   }
 
-  /* ---------- Lyrics ---------- */
+  .track {
+    position: relative;
+    width: 100%;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.15);
+    overflow: visible;
+  }
+
+  .fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--gold-deep), var(--gold-light));
+    box-shadow: 0 0 12px rgba(240,168,48,0.55);
+  }
+
+  .knob {
+    position: absolute;
+    top: 50%;
+    left: 0%;
+    width: 11px;
+    height: 11px;
+    margin: -5.5px 0 0 -5.5px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 10px rgba(240,168,48,0.85), 0 1px 4px rgba(0,0,0,0.4);
+    opacity: 0;
+    transition: opacity .2s ease, transform .18s ease;
+  }
+  .player:hover .knob { opacity: 1; }
+  .bar:active .knob   { opacity: 1; transform: scale(1.25); }
+
+  .time {
+    flex: 0 0 auto;
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    color: rgba(244,240,234,0.60);
+    min-width: 72px;
+    text-align: right;
+  }
+
+  /* ---------- PRAVY SLOUPEC ---------- */
+  .scroll { position: relative; }
+
+  .scroll::after {
+    content: '';
+    position: fixed;
+    top: 0; bottom: 0;
+    left: 42vw; right: 0;
+    z-index: 10;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      var(--bg) 0%,
+      rgba(12,10,16,0) 19%,
+      rgba(12,10,16,0) 81%,
+      var(--bg) 100%
+    );
+  }
+
   .lyrics {
+    position: relative;
     max-width: 640px;
     margin: 0 auto;
-    padding: 44vh 24px 55vh;
+    padding: 46vh 40px 52vh 66px;
+  }
+
+  /* PROGRESS LINE — svisla nit vedle textu */
+  .lyrics::before {
+    content: '';
+    position: absolute;
+    top: 46vh; bottom: 52vh;
+    left: 26px;
+    width: 1px;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      rgba(255,255,255,0.10) 6%,
+      rgba(255,255,255,0.10) 94%,
+      transparent
+    );
   }
 
   .line {
-    font-size: 21px;
-    line-height: var(--line-h);
-    font-weight: 500;
-    color: var(--text-dim);
-    padding: 9px 12px;
-    margin: 1px -12px;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: color .35s ease, background-color .35s ease, transform .35s cubic-bezier(.22,1,.36,1);
-    transform-origin: left center;
     position: relative;
-  }
-
-  .line:hover { color: var(--text-mid); }
-
-  .line.refrain {
-    font-style: italic;
+    font-size: 25px;
+    line-height: 1.44;
     font-weight: 600;
+    letter-spacing: -0.011em;
+    color: rgba(244,240,234,0.22);
+    padding: 8px 0;
+    margin: 0;
+    cursor: pointer;
+    transform-origin: left center;
+    text-wrap: balance;
+    transition:
+      color      .45s cubic-bezier(.4,0,.2,1),
+      transform  .5s  cubic-bezier(.22,1,.36,1),
+      filter     .45s ease,
+      text-shadow .5s ease;
   }
+
+  .line:hover { color: rgba(244,240,234,0.46); }
+
+  .line.refrain { font-style: italic; font-weight: 500; }
+
+  /* tecka na progress line */
+  .line::before {
+    content: '';
+    position: absolute;
+    left: -40px;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    margin-top: -3.5px;
+    border-radius: 50%;
+    background: var(--gold-deep);
+    opacity: 0;
+    transform: scale(0.4);
+    transition: opacity .35s ease, transform .4s cubic-bezier(.34,1.56,.64,1);
+    box-shadow: 0 0 14px rgba(240,168,48,0.9), 0 0 30px rgba(240,168,48,0.4);
+  }
+
+  .line.active::before { opacity: 1; transform: scale(1); }
 
   .line.active {
     color: var(--text);
-    background: var(--accent-soft);
-    transform: scale(1.035);
+    transform: translateX(11px) scale(1.04);
+    filter: brightness(1.07);
+    text-shadow:
+      0 0 24px rgba(240,168,48,0.30),
+      0 0 50px rgba(240,168,48,0.11);
   }
 
-  .line.active.refrain { color: var(--accent); }
+  .line.active.refrain {
+    color: var(--gold-light);
+    text-shadow:
+      0 0 26px rgba(240,168,48,0.46),
+      0 0 56px rgba(240,168,48,0.18);
+  }
 
-  .line.past { color: var(--text-mid); }
+  .line.near { color: rgba(244,240,234,0.38); }
+  .line.past { color: rgba(244,240,234,0.16); }
+  .line.gap  { height: 44px; padding: 0; cursor: default; }
+  .line.gap::before { display: none; }
 
-  .line.gap { height: 22px; padding: 0; margin: 0; }
-
+  /* ---------- POZNAMKA ---------- */
   .note {
+    position: relative;
     max-width: 640px;
     margin: 0 auto;
-    padding: 0 24px 40px;
-    font-size: 12px;
-    line-height: 1.65;
-    color: var(--text-dim);
-    border-top: 1px solid rgba(255,255,255,0.07);
-    padding-top: 22px;
+    padding: 26px 40px 64px 66px;
+    font-size: 12.5px;
+    line-height: 1.72;
+    color: rgba(244,240,234,0.36);
+    border-top: 1px solid rgba(240,168,48,0.12);
   }
+  .note b { color: rgba(244,240,234,0.62); font-weight: 600; }
 
-  .note b { color: var(--text-mid); font-weight: 600; }
+  /* ================= MOBIL ================= */
+  @media (max-width: 900px) {
+    .stage { display: block; }
 
-  button {
-    flex: 1;
-    font-family: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-mid);
-    background: var(--bg-elev);
-    border: 1px solid rgba(255,255,255,0.09);
-    border-radius: 10px;
-    padding: 11px 8px;
-    cursor: pointer;
-    transition: all .2s ease;
+    .art {
+      position: sticky;
+      top: 0;
+      height: auto;
+      z-index: 20;
+      gap: 15px;
+      padding: 20px 22px 15px;
+      padding-top: max(20px, env(safe-area-inset-top));
+      border-right: 0;
+      border-bottom: 1px solid var(--glass-edge);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+    .art::before { filter: blur(40px) saturate(155%) brightness(0.52); opacity: 0.70; }
+    .art::after {
+      background:
+        linear-gradient(160deg, rgba(255,255,255,0.12), transparent 40%),
+        linear-gradient(to bottom, rgba(12,10,16,0.40), rgba(12,10,16,0.76));
+    }
+
+    /* obalka ~25 % vysky */
+    .cover-wrap {
+      width: auto;
+      height: 25vh;
+      max-height: 215px;
+      aspect-ratio: 1;
+      max-width: none;
+    }
+    .cover-wrap::before { inset: -30px; }
+    .cover { border-radius: 16px; }
+
+    .meta   { max-width: 440px; }
+    .title    { font-size: 18px; margin-bottom: 3px; }
+    .subtitle { font-size: 9px; margin-bottom: 13px; letter-spacing: 0.15em; }
+    .player   { max-width: 440px; margin: 0 auto; padding: 9px 13px; gap: 11px; }
+    .play     { flex-basis: 31px; width: 31px; height: 31px; }
+    .time     { font-size: 10px; min-width: 66px; }
+
+    .scroll::after { left: 0; }
+
+    .lyrics { padding: 26vh 24px 48vh 24px; text-align: center; }
+    .lyrics::before { display: none; }      /* progress line jen na desktopu */
+
+    .line   { font-size: 21px; padding: 7px 0; transform-origin: center center; }
+    .line::before { display: none; }
+    .line.active  { transform: scale(1.045); }
+    .line.gap     { height: 34px; }
+
+    .note { padding: 24px 24px 56px; text-align: center; }
   }
-
-
-
-
-
-
-
-
-
-
-
 </style>
 </head>
 <body>
 
-<div class="player">
-  <div class="player-inner">
-    <img class="cover" src="Gurudev_Album.png" alt="Gurudev">
+<div class="stage">
+
+  <aside class="art">
+    <div class="cover-wrap">
+      <img class="cover" src="Gurudev_Album.png" alt="Gurudev">
+    </div>
+
     <div class="meta">
       <p class="title">Gurudév</p>
       <p class="subtitle">Bhakti · Prem · Shanti</p>
-      <audio id="audio" controls preload="metadata" src="Music_GURUDEV.m4a"></audio>
+
+      <div class="player">
+        <button class="play" id="play" aria-label="Přehrát">
+          <svg id="icon" width="13" height="13" viewBox="0 0 12 12">
+            <path d="M2.5 1.2 L10 6 L2.5 10.8 Z"/>
+          </svg>
+        </button>
+
+        <div class="bar" id="bar">
+          <div class="track">
+            <div class="fill" id="fill"></div>
+            <div class="knob" id="knob"></div>
+          </div>
+        </div>
+
+        <span class="time" id="time">0:00 / 0:00</span>
+      </div>
+
+      <audio id="audio" preload="metadata" src="Music_GURUDEV.m4a"></audio>
     </div>
-  </div>
-</div>
+  </aside>
 
-<div class="lyrics" id="lyrics"></div>
+  <main class="scroll">
+    <div class="lyrics" id="lyrics"></div>
+    <div class="note">
+      <b>Poznámka k překladu.</b> Píseň vychází z Gíty 9.25 — kdo uctívá dévy, jde k dévům; kdo předky, k předkům; kdo bhúty a préty, k nim.
+      <b>Bhúta</b> a <b>préta</b> jsou dvě odlišné kategorie (duch zemřelého a neuspokojený, hladový duch), proto jsou v překladu ponechány odděleně.
+      Závěr vyslovuje <b>Karauli Šankar</b>.
+    </div>
+  </main>
 
-<div class="note">
-  <b>Poznámka k překladu.</b> Píseň vychází z Gíty 9.25 — kdo uctívá dévy, jde k dévům; kdo předky, k předkům; kdo bhúty a préty, k nim.
-  <b>Bhúta</b> a <b>préta</b> jsou v hindské kosmologii dvě odlišné kategorie (duch zemřelého a neuspokojený, hladový duch), proto jsou v překladu ponechány odděleně.
-  Závěr vyslovuje <b>Karauli Šankar</b>.
 </div>
 
 <script>
-/* ============================================================
-   TEXT + ČASY
-   ------------------------------------------------------------
-   t  = čas v sekundách, kdy se řádek rozsvítí
-   x  = "r" → refrén (kurzíva, zlatá)
-        "-" → prázdná mezera mezi slokami (bez času)
-   Časy jsou odhad rozpočítaný z Whisperových segmentů.
-   Dolaď je režimem "Upravit časy" a exportuj zpět sem.
-   ============================================================ */
 const L = [
   {t:0.0, s:"Ulevíš utrpení trpících."},
   {t:5.2, s:"Budeš uzdravovat nemocné a zmírňovat jejich bolesti."},
@@ -385,37 +641,74 @@ const L = [
   {t:624.3, s:"k tomu po smrti také půjdeš.", x:"r"},
 ];
 
-/* ---------- Build DOM ---------- */
-const audio  = document.getElementById('audio');
-const box    = document.getElementById('lyrics');
-const nodes  = [];   // { el, t, idx }
+/* ---------- Sestaveni DOM ---------- */
+const audio = document.getElementById('audio');
+const box   = document.getElementById('lyrics');
+const nodes = [];
 
 L.forEach((row, i) => {
   const el = document.createElement('div');
-  if (row.x === '-') {
-    el.className = 'line gap';
-    box.appendChild(el);
-    return;
-  }
+  if (row.x === '-') { el.className = 'line gap'; box.appendChild(el); return; }
   el.className = 'line' + (row.x === 'r' ? ' refrain' : '');
-  el.dataset.i = i;
-
-  el.appendChild(document.createTextNode(row.s));
+  el.textContent = row.s;
   box.appendChild(el);
   nodes.push({ el, i });
 });
 
-function fmt(t) {
+/* ---------- Prehravac ---------- */
+const play = document.getElementById('play');
+const icon = document.getElementById('icon');
+const bar  = document.getElementById('bar');
+const fill = document.getElementById('fill');
+const knob = document.getElementById('knob');
+const time = document.getElementById('time');
+
+const PLAY  = 'M2.5 1.2 L10 6 L2.5 10.8 Z';
+const PAUSE = 'M2.2 1.4 H4.6 V10.6 H2.2 Z M7.4 1.4 H9.8 V10.6 H7.4 Z';
+
+play.onclick = () => audio.paused ? audio.play() : audio.pause();
+
+audio.addEventListener('play',  () => icon.firstElementChild.setAttribute('d', PAUSE));
+audio.addEventListener('pause', () => icon.firstElementChild.setAttribute('d', PLAY));
+
+function clock(t) {
+  if (!isFinite(t)) return '0:00';
   const m = Math.floor(t / 60);
-  const s = (t % 60).toFixed(1).padStart(4, '0');
+  const s = Math.floor(t % 60).toString().padStart(2, '0');
   return `${m}:${s}`;
 }
 
-/* ---------- State ---------- */
+audio.addEventListener('timeupdate', () => {
+  const p = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+  fill.style.width = p + '%';
+  knob.style.left  = p + '%';
+  time.textContent = `${clock(audio.currentTime)} / ${clock(audio.duration)}`;
+});
+audio.addEventListener('loadedmetadata', () => {
+  time.textContent = `0:00 / ${clock(audio.duration)}`;
+});
+
+/* seek — klik i tazeni */
+let dragging = false;
+
+function seek(e) {
+  const r = bar.getBoundingClientRect();
+  const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+  const p = Math.min(1, Math.max(0, x / r.width));
+  if (audio.duration) audio.currentTime = p * audio.duration;
+}
+
+bar.addEventListener('mousedown',  e => { dragging = true; seek(e); });
+bar.addEventListener('touchstart', e => { dragging = true; seek(e); }, { passive: true });
+window.addEventListener('mousemove', e => { if (dragging) seek(e); });
+window.addEventListener('touchmove', e => { if (dragging) seek(e); }, { passive: true });
+window.addEventListener('mouseup',   () => dragging = false);
+window.addEventListener('touchend',  () => dragging = false);
+
+/* ---------- Synchronizace textu ---------- */
 let follow  = true;
 let current = -1;
 
-/* ---------- Sync loop ---------- */
 function tick() {
   const now = audio.currentTime;
   let idx = -1;
@@ -425,8 +718,10 @@ function tick() {
   if (idx !== current) {
     current = idx;
     nodes.forEach((n, k) => {
+      const d = Math.abs(k - idx);
       n.el.classList.toggle('active', k === idx);
-      n.el.classList.toggle('past',   k < idx);
+      n.el.classList.toggle('near',   d === 1);
+      n.el.classList.toggle('past',   k < idx - 1);
     });
     if (follow && idx >= 0) {
       nodes[idx].el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -436,7 +731,7 @@ function tick() {
 }
 requestAnimationFrame(tick);
 
-/* ---------- Klik na radek = skok v audiu ---------- */
+/* ---------- Klik na radek = skok ---------- */
 box.addEventListener('click', e => {
   const el = e.target.closest('.line');
   if (!el || el.classList.contains('gap')) return;
@@ -445,16 +740,15 @@ box.addEventListener('click', e => {
   audio.play();
 });
 
-/* ---------- Auto-scroll pauza pri rucnim scrollovani ---------- */
-let scrollTimer = null;
-window.addEventListener('wheel',     pauseFollow, { passive: true });
-window.addEventListener('touchmove', pauseFollow, { passive: true });
-
+/* ---------- Rucni scroll docasne vypne sledovani ---------- */
+let st = null;
 function pauseFollow() {
   follow = false;
-  clearTimeout(scrollTimer);
-  scrollTimer = setTimeout(() => { follow = true; current = -2; }, 4000);
+  clearTimeout(st);
+  st = setTimeout(() => { follow = true; current = -2; }, 4000);
 }
+window.addEventListener('wheel',     pauseFollow, { passive: true });
+window.addEventListener('touchmove', pauseFollow, { passive: true });
 
 /* ---------- Klavesnice ---------- */
 document.addEventListener('keydown', e => {
