@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Gurudév — text písně</title>
+<link rel="icon" href="Gurudev_Album.png">
+<link rel="apple-touch-icon" href="Gurudev_Album.png">
+<meta property="og:title" content="Gurudév">
+<meta property="og:description" content="Bhadžan s českým překladem">
+<meta property="og:image" content="Gurudev_Album.png">
+<meta property="og:type" content="music.song">
+<meta name="theme-color" content="#0d0b12">
+<style>
+  :root {
+    --bg: #0d0b12;
+    --bg-elev: rgba(255,255,255,0.06);
+    --text: #f2eee8;
+    --text-dim: rgba(242,238,232,0.38);
+    --text-mid: rgba(242,238,232,0.60);
+    --accent: #e8b04b;
+    --accent-soft: rgba(232,176,75,0.14);
+    --refrain: rgba(232,176,75,0.75);
+    --line-h: 1.55;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background:
+      radial-gradient(900px 600px at 50% -10%, rgba(232,176,75,0.16), transparent 62%),
+      radial-gradient(700px 500px at 50% 105%, rgba(232,176,75,0.07), transparent 60%),
+      var(--bg);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+
+  /* ---------- Player (sticky) ---------- */
+  .player {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    padding: 14px 20px 12px;
+    padding-top: max(14px, env(safe-area-inset-top));
+    background: rgba(13,11,18,0.74);
+    backdrop-filter: saturate(180%) blur(24px);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+    border-bottom: 1px solid rgba(232,176,75,0.14);
+  }
+
+  .player-inner {
+    max-width: 640px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .cover {
+    width: 62px;
+    height: 62px;
+    flex: 0 0 62px;
+    border-radius: 8px;
+    object-fit: cover;
+    box-shadow:
+      0 3px 14px rgba(0,0,0,0.5),
+      0 0 0 1px rgba(232,176,75,0.22);
+  }
+
+  .meta {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .title {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    margin: 0 0 2px;
+  }
+
+  .subtitle {
+    font-size: 11px;
+    color: var(--accent);
+    opacity: 0.72;
+    margin: 0 0 9px;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  audio {
+    width: 100%;
+    height: 32px;
+    display: block;
+  }
+
+  @media (max-width: 460px) {
+    .cover { width: 52px; height: 52px; flex-basis: 52px; }
+    .title { font-size: 14px; }
+    .player-inner { gap: 12px; }
+  }
+
+  /* ---------- Lyrics ---------- */
+  .lyrics {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 44vh 24px 55vh;
+  }
+
+  .line {
+    font-size: 21px;
+    line-height: var(--line-h);
+    font-weight: 500;
+    color: var(--text-dim);
+    padding: 9px 12px;
+    margin: 1px -12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: color .35s ease, background-color .35s ease, transform .35s cubic-bezier(.22,1,.36,1);
+    transform-origin: left center;
+    position: relative;
+  }
+
+  .line:hover { color: var(--text-mid); }
+
+  .line.refrain {
+    font-style: italic;
+    font-weight: 600;
+  }
+
+  .line.active {
+    color: var(--text);
+    background: var(--accent-soft);
+    transform: scale(1.035);
+  }
+
+  .line.active.refrain { color: var(--accent); }
+
+  .line.past { color: var(--text-mid); }
+
+  .line.gap { height: 22px; padding: 0; margin: 0; }
+
+  /* ---------- Edit mode ---------- */
+  body.editing .line {
+    padding-left: 62px;
+  }
+
+  .stamp {
+    display: none;
+    position: absolute;
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--accent);
+    background: rgba(232,176,75,0.10);
+    border: 1px solid rgba(232,176,75,0.28);
+    border-radius: 6px;
+    padding: 4px 6px;
+    min-width: 50px;
+    text-align: center;
+  }
+
+  body.editing .stamp { display: block; }
+  body.editing .line.gap { display: none; }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    background: rgba(13,11,18,0.80);
+    backdrop-filter: saturate(180%) blur(24px);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+
+  button {
+    flex: 1;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-mid);
+    background: var(--bg-elev);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 10px;
+    padding: 11px 8px;
+    cursor: pointer;
+    transition: all .2s ease;
+  }
+
+  button:hover { color: var(--text); background: rgba(255,255,255,0.10); }
+
+  button.on {
+    color: var(--bg);
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .hint {
+    position: fixed;
+    bottom: 68px;
+    bottom: calc(68px + env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 29;
+    font-size: 11px;
+    color: var(--text-dim);
+    background: rgba(13,11,18,0.9);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 999px;
+    padding: 7px 14px;
+    white-space: nowrap;
+    display: none;
+    pointer-events: none;
+  }
+
+  body.editing .hint { display: block; }
+
+  #out {
+    display: none;
+    max-width: 640px;
+    margin: 0 auto 90px;
+    padding: 0 24px;
+  }
+
+  #out textarea {
+    width: 100%;
+    height: 260px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--text-mid);
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 10px;
+    padding: 12px;
+    resize: vertical;
+  }
+</style>
+</head>
+<body>
+
+<div class="player">
+  <div class="player-inner">
+    <img class="cover" src="Gurudev_Album.png" alt="Gurudev">
+    <div class="meta">
+      <p class="title">Gurudév</p>
+      <p class="subtitle">Bhakti · Prem · Shanti</p>
+      <audio id="audio" controls preload="metadata" src="Music_GURUDEV.m4a"></audio>
+    </div>
+  </div>
+</div>
+
+<div class="lyrics" id="lyrics"></div>
+
+<div class="hint">Klikni na řádek = zapsat aktuální čas</div>
+
+<div class="toolbar">
+  <button id="btnFollow" class="on">Sledovat</button>
+  <button id="btnEdit">Upravit časy</button>
+  <button id="btnExport">Export</button>
+</div>
+
+<div id="out"><textarea id="outText" readonly></textarea></div>
+
+<script>
+/* ============================================================
+   TEXT + ČASY
+   ------------------------------------------------------------
+   t  = čas v sekundách, kdy se řádek rozsvítí
+   x  = "r" → refrén (kurzíva, zlatá)
+        "-" → prázdná mezera mezi slokami (bez času)
+   Časy jsou odhad rozpočítaný z Whisperových segmentů.
+   Dolaď je režimem "Upravit časy" a exportuj zpět sem.
+   ============================================================ */
+const L = [
+  {t:0.2,  s:"Ulevíš utrpení trpících."},
+  {t:3.5,  s:"Budeš uzdravovat nemocné a zmírňovat jejich bolesti."},
+  {t:8.1,  s:"Budeš sytit hladové"},
+  {t:11.5, s:"a budeš sloužit těm, kteří pomoc potřebují."},
+  {t:15.1, s:"I po smrti budeš žít mezi dévy."},
+  {t:18.9, s:"Budeš s nimi žít šťastně a v radosti."},
+  {t:22.0, s:"Ve tvém nitru se probudí touha po úplnosti."},
+  {t:29.0, s:"Získáš zrození v dobré rodině."},
+  {t:32.5, s:"Narodíš se v ušlechtilém rodu."},
+  {x:"-"},
+  {t:38.5, s:"Koho za života uctíváš,", x:"r"},
+  {t:41.0, s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:46.3, s:"Nárájan to řekl v Gítě,", x:"r"},
+  {t:49.8, s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
+  {t:53.2, s:"Koho za života uctíváš,", x:"r"},
+  {t:56.5, s:"k tomu po smrti také půjdeš.", x:"r"},
+  {x:"-"},
+  {t:60.1, s:"Budeš-li uctívat předky"},
+  {t:63.5, s:"a každý den na ně vzpomínat,"},
+  {t:80.9, s:"zůstaneš připoután k jejich světu"},
+  {t:84.2, s:"a budeš žít mezi nemocemi a utrpením."},
+  {t:87.8, s:"Ať tomu věříš, nebo ne,"},
+  {t:90.5, s:"budeš se zrození za zrozením rodit"},
+  {t:92.8, s:"jako zvíře nebo pták."},
+  {t:94.7, s:"Po smrti uvízneš mezi nimi."},
+  {x:"-"},
+  {t:98.0, s:"Koho za života uctíváš,", x:"r"},
+  {t:100.0,s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:105.1,s:"Nárájan to řekl v Gítě,", x:"r"},
+  {t:108.5,s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
+  {t:112.1,s:"Koho za života uctíváš,", x:"r"},
+  {t:115.5,s:"k tomu po smrti také půjdeš.", x:"r"},
+  {x:"-"},
+  {t:118.9,s:"Připojíš-li se k uctívání duchů,"},
+  {t:122.5,s:"zůstaneš v utrpení — a v utrpení i zůstaneš."},
+  {t:139.7,s:"Za života naplněn nemocemi a bolestí,"},
+  {t:143.2,s:"po smrti uvízneš v jejich zajetí."},
+  {t:146.6,s:"Budeš bloudit v milionech nižších zrození,"},
+  {t:150.0,s:"znovu a znovu jako zvíře, pták či hmyz."},
+  {t:153.5,s:"Poneseš s sebou tíhu bolestného utrpení"},
+  {t:157.0,s:"a budeš se toulat jako bhúta a préta."},
+  {x:"-"},
+  {t:160.5,s:"Koho za života uctíváš,", x:"r"},
+  {t:163.8,s:"k tomu po smrti také půjdeš.", x:"r"},
+  {x:"-"},
+  {t:167.4,s:"Uctíváním prétů a předků,"},
+  {t:171.0,s:"uvězněn v chamtivosti a touze,"},
+  {t:202.1,s:"budeš po statisíce zrození"},
+  {t:204.8,s:"takto bloudit dál,"},
+  {t:207.2,s:"v nižších lůnech, kde není nikoho jiného."},
+  {t:210.1,s:"Nebudeš mít nikoho blízkého,"},
+  {t:212.9,s:"ani přítele či příbuzného,"},
+  {t:215.9,s:"ani nikoho ze svého rodu."},
+  {t:218.8,s:"Nenajde se způsob, jak dosáhnout osvobození."},
+  {t:222.8,s:"Tvá duše bude dál bezcílně putovat ode dveří ke dveřím."},
+  {x:"-"},
+  {t:226.5,s:"Koho za života uctíváš,", x:"r"},
+  {t:229.7,s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:233.2,s:"Nárájan to řekl v Gítě,", x:"r"},
+  {t:236.8,s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
+  {t:240.0,s:"Koho za života uctíváš,", x:"r"},
+  {t:243.5,s:"k tomu po smrti také půjdeš.", x:"r"},
+  {x:"-"},
+  {t:247.0,s:"Jako pes, kočka, koza,"},
+  {t:250.5,s:"jako hmyz, motýl, zvíře i pták —"},
+  {t:254.0,s:"znovu a znovu se budeš muset rodit."},
+  {t:271.4,s:"Sekán a bit, znovu a znovu umíraje,"},
+  {t:275.5,s:"staneš se i sovou."},
+  {x:"-"},
+  {t:278.5,s:"Koho za života uctíváš,", x:"r"},
+  {t:281.8,s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:285.1,s:"Nárájan to řekl v Gítě,", x:"r"},
+  {t:288.6,s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
+  {t:292.0,s:"Koho za života uctíváš,", x:"r"},
+  {t:295.4,s:"k tomu po smrti také půjdeš.", x:"r"},
+  {x:"-"},
+  {t:298.9,s:"Toužíš-li po osvobození,"},
+  {t:302.5,s:"musíš se tomu všemu vyhnout."},
+  {t:306.0,s:"Vzdej se připoutanosti a chamtivosti,"},
+  {t:310.0,s:"vyvaruj se ega."},
+  {t:326.6,s:"Chceš-li z toho dosáhnout osvobození,"},
+  {t:330.0,s:"musíš vstoupit do útočiště Gurua."},
+  {x:"-"},
+  {t:333.5,s:"Koho za života uctíváš,", x:"r"},
+  {t:336.8,s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:340.5,s:"Nárájan to řekl v Gítě,", x:"r"},
+  {t:344.0,s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
+  {t:347.4,s:"Koho za života uctíváš,", x:"r"},
+  {t:350.8,s:"k tomu po smrti také půjdeš.", x:"r"},
+  {x:"-"},
+  {t:354.3,s:"Jakmile nalezneš útočiště,"},
+  {t:358.0,s:"vzroste v tobě touha poznat sám sebe."},
+  {t:362.5,s:"Kdo jsem? A proč jsem se narodil?"},
+  {t:367.0,s:"Tato žízeň po poznání bude sílit."},
+  {t:372.0,s:"Skrze meditaci, samádhi a službu,"},
+  {t:377.0,s:"jakmile se ustálíš ve vědomí svědka,"},
+  {t:382.0,s:"spatříš celé bytí."},
+  {t:388.9,s:"Službou Guruovi"},
+  {t:392.0,s:"se osvobodíš od chamtivosti a touhy."},
+  {t:395.9,s:"Uzříš sám sebe takového, jaký jsi."},
+  {t:399.5,s:"Osvobodíš se od všech pout."},
+  {t:402.8,s:"Sahasrára se pak otevře."},
+  {t:406.0,s:"Utrpení mnoha zrození skončí."},
+  {t:409.7,s:"Až se rozplyne nevědomost,"},
+  {t:414.5,s:"spatříš Nejvyššího."},
+  {x:"-"},
+  {t:420.1,s:"Koho za života uctíváš,", x:"r"},
+  {t:423.5,s:"k tomu po smrti také půjdeš.", x:"r"},
+  {x:"-"},
+  {t:427.0,s:"Chceš-li uniknout všem těmto zmatkům,"},
+  {t:431.0,s:"budeš muset přijmout útočiště Šivy."},
+  {t:461.6,s:"Útočiště Šivy je mým útočištěm."},
+  {t:465.0,s:"Budeš-li tomu skutečně věřit,"},
+  {t:468.5,s:"pak vězte všichni s jistotou:"},
+  {t:471.5,s:"poznání a samádhi dosáhnete ještě za života."},
+  {x:"-"},
+  {t:475.4,s:"Koho za života uctíváš,", x:"r"},
+  {t:478.8,s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:482.4,s:"Nárájan to řekl v Gítě,", x:"r"},
+  {t:485.9,s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
+  {t:489.3,s:"Koho za života uctíváš,", x:"r"},
+  {t:492.7,s:"k tomu po smrti také půjdeš.", x:"r"},
+  {x:"-"},
+  {t:496.2,s:"Až se osvobodíš od chamtivosti a touhy,"},
+  {t:503.0,s:"dojdeš uskutečnění."},
+  {t:510.0,s:"Právě proto jsi přijal toto tělo —"},
+  {t:517.0,s:"naplň smysl tohoto lidského života."},
+  {x:"-"},
+  {t:524.0,s:"Koho za života uctíváš,", x:"r"},
+  {t:527.4,s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:530.9,s:"Nárájan to řekl v Gítě,", x:"r"},
+  {t:534.4,s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
+  {t:537.8,s:"Koho za života uctíváš,", x:"r"},
+  {t:541.2,s:"k tomu po smrti také půjdeš.", x:"r"},
+  {x:"-"},
+  {t:544.7,s:"Šankar promlouvá s úsměvem,"},
+  {t:552.0,s:"znovu a znovu Šankar praví:"},
+  {t:575.9,s:"Vytrvale praktikuj meditaci a sádhanu."},
+  {t:580.5,s:"Věnujte pozornost, meditujte všichni."},
+  {t:584.5,s:"Až se osvobodíš od světskosti,"},
+  {t:587.5,s:"odejde i vše negativní."},
+  {t:589.7,s:"Nalezneš klid a spokojenost."},
+  {t:594.0,s:"Znovu zazní volání Hari-Har,"},
+  {t:598.0,s:"blaženost naplní každý dům."},
+  {t:601.5,s:"Tehdy poznáš sám sebe"},
+  {t:604.0,s:"a zůstaneš svobodný od chamtivosti a touhy."},
+  {x:"-"},
+  {t:607.0,s:"Koho za života uctíváš,", x:"r"},
+  {t:610.4,s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:614.0,s:"Koho za života uctíváš,", x:"r"},
+  {t:617.4,s:"k tomu po smrti také půjdeš.", x:"r"},
+  {x:"-"},
+  {t:674.9,s:"Koho za života uctíváš,", x:"r"},
+  {t:678.5,s:"k tomu po smrti také půjdeš.", x:"r"}
+];
+
+/* ---------- Build DOM ---------- */
+const audio  = document.getElementById('audio');
+const box    = document.getElementById('lyrics');
+const nodes  = [];   // { el, t, idx }
+
+L.forEach((row, i) => {
+  const el = document.createElement('div');
+  if (row.x === '-') {
+    el.className = 'line gap';
+    box.appendChild(el);
+    return;
+  }
+  el.className = 'line' + (row.x === 'r' ? ' refrain' : '');
+  el.dataset.i = i;
+
+  const stamp = document.createElement('span');
+  stamp.className = 'stamp';
+  stamp.textContent = fmt(row.t);
+  el.appendChild(stamp);
+
+  el.appendChild(document.createTextNode(row.s));
+  box.appendChild(el);
+  nodes.push({ el, i, stamp });
+});
+
+function fmt(t) {
+  const m = Math.floor(t / 60);
+  const s = (t % 60).toFixed(1).padStart(4, '0');
+  return `${m}:${s}`;
+}
+
+/* ---------- State ---------- */
+let follow  = true;
+let editing = false;
+let current = -1;
+
+const btnFollow = document.getElementById('btnFollow');
+const btnEdit   = document.getElementById('btnEdit');
+const btnExport = document.getElementById('btnExport');
+const out       = document.getElementById('out');
+const outText   = document.getElementById('outText');
+
+/* ---------- Sync loop ---------- */
+function tick() {
+  const now = audio.currentTime;
+  let idx = -1;
+  for (let k = 0; k < nodes.length; k++) {
+    if (L[nodes[k].i].t <= now) idx = k; else break;
+  }
+  if (idx !== current) {
+    current = idx;
+    nodes.forEach((n, k) => {
+      n.el.classList.toggle('active', k === idx);
+      n.el.classList.toggle('past', k < idx);
+    });
+    if (follow && !editing && idx >= 0) {
+      nodes[idx].el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+/* ---------- Click a line ---------- */
+box.addEventListener('click', e => {
+  const el = e.target.closest('.line');
+  if (!el || el.classList.contains('gap')) return;
+  const i = +el.dataset.i;
+
+  if (editing) {
+    L[i].t = Math.round(audio.currentTime * 10) / 10;
+    const n = nodes.find(n => n.i === i);
+    n.stamp.textContent = fmt(L[i].t);
+    current = -2;             // force re-eval
+  } else {
+    audio.currentTime = L[i].t;
+    audio.play();
+  }
+});
+
+/* ---------- Buttons ---------- */
+btnFollow.onclick = () => {
+  follow = !follow;
+  btnFollow.classList.toggle('on', follow);
+};
+
+btnEdit.onclick = () => {
+  editing = !editing;
+  document.body.classList.toggle('editing', editing);
+  btnEdit.classList.toggle('on', editing);
+  if (editing) { follow = false; btnFollow.classList.remove('on'); }
+};
+
+btnExport.onclick = () => {
+  const lines = L.map(r => {
+    if (r.x === '-') return '  {x:"-"},';
+    const xa = r.x === 'r' ? ', x:"r"' : '';
+    return `  {t:${r.t.toFixed(1)}, s:${JSON.stringify(r.s)}${xa}},`;
+  });
+  outText.value = 'const L = [\n' + lines.join('\n') + '\n];';
+  out.style.display = out.style.display === 'block' ? 'none' : 'block';
+  if (out.style.display === 'block') {
+    outText.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    outText.select();
+  }
+};
+
+/* ---------- Keyboard ---------- */
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'TEXTAREA') return;
+  if (e.code === 'Space')      { e.preventDefault(); audio.paused ? audio.play() : audio.pause(); }
+  if (e.code === 'ArrowLeft')  { audio.currentTime -= 3; }
+  if (e.code === 'ArrowRight') { audio.currentTime += 3; }
+});
+</script>
+</body>
+</html>
