@@ -274,11 +274,12 @@
 
 <div class="lyrics" id="lyrics"></div>
 
-<div class="hint">Klikni na řádek = zapsat aktuální čas</div>
+<div class="hint" id="hint">Klikni na řádek = zapsat aktuální čas</div>
 
 <div class="toolbar">
   <button id="btnFollow" class="on">Sledovat</button>
   <button id="btnEdit">Upravit časy</button>
+  <button id="btnShift">Posun ⏭</button>
   <button id="btnExport">Export</button>
 </div>
 
@@ -483,13 +484,16 @@ function fmt(t) {
 }
 
 /* ---------- State ---------- */
-let follow  = true;
-let editing = false;
-let current = -1;
+let follow    = true;
+let editing   = false;
+let shiftMode = false;
+let current   = -1;
 
 const btnFollow = document.getElementById('btnFollow');
 const btnEdit   = document.getElementById('btnEdit');
+const btnShift  = document.getElementById('btnShift');
 const btnExport = document.getElementById('btnExport');
+const hint      = document.getElementById('hint');
 const out       = document.getElementById('out');
 const outText   = document.getElementById('outText');
 
@@ -520,15 +524,30 @@ box.addEventListener('click', e => {
   if (!el || el.classList.contains('gap')) return;
   const i = +el.dataset.i;
 
-  if (editing) {
-    L[i].t = Math.round(audio.currentTime * 10) / 10;
-    const n = nodes.find(n => n.i === i);
-    n.stamp.textContent = fmt(L[i].t);
-    current = -2;             // force re-eval
-  } else {
+  if (!editing) {
     audio.currentTime = L[i].t;
     audio.play();
+    return;
   }
+
+  const now = Math.round(audio.currentTime * 10) / 10;
+
+  if (shiftMode) {
+    // Posun tohoto řádku i všech následujících o stejný rozdíl
+    const delta = now - L[i].t;
+    L.forEach((r, k) => {
+      if (k >= i && r.x !== '-') {
+        r.t = Math.round((r.t + delta) * 10) / 10;
+      }
+    });
+    nodes.forEach(n => { n.stamp.textContent = fmt(L[n.i].t); });
+  } else {
+    // Posun jen tohoto jednoho řádku
+    L[i].t = now;
+    nodes.find(n => n.i === i).stamp.textContent = fmt(now);
+  }
+
+  current = -2;   // force re-eval
 });
 
 /* ---------- Buttons ---------- */
@@ -542,7 +561,23 @@ btnEdit.onclick = () => {
   document.body.classList.toggle('editing', editing);
   btnEdit.classList.toggle('on', editing);
   if (editing) { follow = false; btnFollow.classList.remove('on'); }
+  else { shiftMode = false; btnShift.classList.remove('on'); }
+  updateHint();
 };
+
+btnShift.onclick = () => {
+  shiftMode = !shiftMode;
+  btnShift.classList.toggle('on', shiftMode);
+  if (shiftMode && !editing) btnEdit.onclick();   // posun dává smysl jen v editaci
+  updateHint();
+};
+
+function updateHint() {
+  hint.textContent = shiftMode
+    ? 'Klik na řádek = posunout ho i VŠECHNY následující'
+    : 'Klik na řádek = zapsat aktuální čas (jen tento řádek)';
+}
+updateHint();
 
 btnExport.onclick = () => {
   const lines = L.map(r => {
