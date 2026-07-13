@@ -152,48 +152,18 @@
 
   .line.gap { height: 22px; padding: 0; margin: 0; }
 
-  /* ---------- Edit mode ---------- */
-  body.editing .line {
-    padding-left: 62px;
-  }
-
-  .stamp {
-    display: none;
-    position: absolute;
-    left: 4px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 10px;
-    font-variant-numeric: tabular-nums;
-    font-weight: 600;
-    color: var(--accent);
-    background: rgba(232,176,75,0.10);
-    border: 1px solid rgba(232,176,75,0.28);
-    border-radius: 6px;
-    padding: 4px 6px;
-    min-width: 50px;
-    text-align: center;
-  }
-
-  body.editing .stamp { display: block; }
-  body.editing .line.gap { display: none; }
-
-  /* ---------- Toolbar ---------- */
-  .toolbar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 30;
-    display: flex;
-    gap: 8px;
-    padding: 12px 16px;
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
-    background: rgba(13,11,18,0.80);
-    backdrop-filter: saturate(180%) blur(24px);
-    -webkit-backdrop-filter: saturate(180%) blur(24px);
+  .note {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 0 24px 40px;
+    font-size: 12px;
+    line-height: 1.65;
+    color: var(--text-dim);
     border-top: 1px solid rgba(255,255,255,0.07);
+    padding-top: 22px;
   }
+
+  .note b { color: var(--text-mid); font-weight: 600; }
 
   button {
     flex: 1;
@@ -209,99 +179,16 @@
     transition: all .2s ease;
   }
 
-  button:hover { color: var(--text); background: rgba(255,255,255,0.10); }
 
-  button.on {
-    color: var(--bg);
-    background: var(--accent);
-    border-color: var(--accent);
-  }
 
-  /* Řádek, který je "na řadě" k otagování */
-  .line.cue {
-    color: var(--text) !important;
-    background: rgba(232,176,75,0.10);
-    box-shadow: inset 3px 0 0 var(--accent);
-    transform: none !important;
-  }
 
-  .hint {
-    position: fixed;
-    bottom: 122px;
-    bottom: calc(122px + env(safe-area-inset-bottom));
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 29;
-    font-size: 11px;
-    color: var(--text-dim);
-    background: rgba(13,11,18,0.92);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 999px;
-    padding: 7px 14px;
-    white-space: nowrap;
-    display: none;
-    pointer-events: none;
-  }
 
-  body.editing .hint { display: block; }
 
-  /* Velké tlačítko zápisu (jen v editaci) */
-  .tapbar {
-    display: none;
-    position: fixed;
-    bottom: 62px;
-    bottom: calc(62px + env(safe-area-inset-bottom));
-    left: 0;
-    right: 0;
-    z-index: 28;
-    padding: 0 16px 10px;
-  }
 
-  body.editing .tapbar { display: block; }
 
-  .tapbar-inner {
-    max-width: 640px;
-    margin: 0 auto;
-    display: flex;
-    gap: 8px;
-  }
 
-  #btnTap {
-    flex: 3;
-    font-size: 15px;
-    padding: 16px 8px;
-    color: var(--bg);
-    background: var(--accent);
-    border-color: var(--accent);
-  }
 
-  #btnTap:disabled {
-    opacity: 0.35;
-    cursor: default;
-  }
 
-  #btnUndo { flex: 1; }
-
-  #out {
-    display: none;
-    max-width: 640px;
-    margin: 0 auto 90px;
-    padding: 0 24px;
-  }
-
-  #out textarea {
-    width: 100%;
-    height: 260px;
-    font-family: ui-monospace, "SF Mono", Menlo, monospace;
-    font-size: 11px;
-    line-height: 1.5;
-    color: var(--text-mid);
-    background: rgba(0,0,0,0.4);
-    border: 1px solid rgba(255,255,255,0.10);
-    border-radius: 10px;
-    padding: 12px;
-    resize: vertical;
-  }
 </style>
 </head>
 <body>
@@ -319,22 +206,11 @@
 
 <div class="lyrics" id="lyrics"></div>
 
-<div class="hint" id="hint"></div>
-
-<div class="tapbar">
-  <div class="tapbar-inner">
-    <button id="btnTap">Zapsat čas ⏎</button>
-    <button id="btnUndo">Zpět</button>
-  </div>
+<div class="note">
+  <b>Poznámka k překladu.</b> Píseň vychází z Gíty 9.25 — kdo uctívá dévy, jde k dévům; kdo předky, k předkům; kdo bhúty a préty, k nim.
+  <b>Bhúta</b> a <b>préta</b> jsou v hindské kosmologii dvě odlišné kategorie (duch zemřelého a neuspokojený, hladový duch), proto jsou v překladu ponechány odděleně.
+  Závěr vyslovuje <b>Karauli Šankar</b>.
 </div>
-
-<div class="toolbar">
-  <button id="btnFollow" class="on">Sledovat</button>
-  <button id="btnEdit">Upravit časy</button>
-  <button id="btnExport">Export</button>
-</div>
-
-<div id="out"><textarea id="outText" readonly></textarea></div>
 
 <script>
 /* ============================================================
@@ -348,171 +224,165 @@
    ============================================================ */
 const L = [
   {t:0.0, s:"Ulevíš utrpení trpících."},
-  {t:3.0, s:"Budeš uzdravovat nemocné a zmírňovat jejich bolesti."},
-  {t:9.6, s:"Budeš sytit hladové"},
-  {t:12.0, s:"a budeš sloužit těm, kteří pomoc potřebují."},
-  {t:17.5, s:"I po smrti budeš žít mezi dévy."},
-  {t:21.4, s:"Budeš s nimi žít šťastně a v radosti."},
-  {t:26.1, s:"Ve tvém nitru se probudí touha po úplnosti."},
-  {t:31.5, s:"Získáš zrození v dobré rodině."},
-  {t:35.3, s:"Narodíš se v ušlechtilém rodu."},
+  {t:5.2, s:"Budeš uzdravovat nemocné a zmírňovat jejich bolesti."},
+  {t:8.7, s:"Budeš sytit hladové"},
+  {t:12.2, s:"a budeš sloužit těm, kteří pomoc potřebují."},
+  {t:15.7, s:"I po smrti budeš žít mezi dévy."},
+  {t:19.1, s:"Budeš s nimi žít šťastně a v radosti."},
+  {t:22.5, s:"Ve tvém nitru se probudí touha po úplnosti."},
+  {t:26.0, s:"Získáš zrození v dobré rodině."},
+  {t:29.6, s:"Narodíš se v ušlechtilém rodu."},
   {x:"-"},
-  {t:39.1, s:"Koho za života uctíváš,", x:"r"},
-  {t:42.7, s:"k tomu po smrti také půjdeš.", x:"r"},
-  {t:46.2, s:"Nárájan to řekl v Gítě,", x:"r"},
+  {t:40.2, s:"Koho za života uctíváš,", x:"r"},
+  {t:43.4, s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:46.9, s:"Nárájan to řekl v Gítě,", x:"r"},
   {t:49.7, s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
   {t:53.1, s:"Koho za života uctíváš,", x:"r"},
   {t:56.4, s:"k tomu po smrti také půjdeš.", x:"r"},
   {x:"-"},
-  {t:59.8, s:"Budeš-li uctívat předky"},
-  {t:63.9, s:"a každý den na ně vzpomínat,"},
-  {t:68.8, s:"zůstaneš připoután k jejich světu"},
-  {t:74.5, s:"a budeš žít mezi nemocemi a utrpením."},
-  {t:81.0, s:"Ať tomu věříš, nebo ne,"},
-  {t:85.0, s:"budeš se zrození za zrozením rodit"},
-  {t:91.0, s:"jako zvíře nebo pták."},
+  {t:74.4, s:"Budeš-li uctívat předky"},
+  {t:78.0, s:"a každý den na ně vzpomínat,"},
+  {t:81.4, s:"zůstaneš připoután k jejich světu"},
+  {t:84.9, s:"a budeš žít mezi nemocemi a utrpením."},
+  {t:88.9, s:"Ať tomu věříš, nebo ne,"},
+  {t:91.9, s:"budeš se zrození za zrozením rodit"},
+  {t:95.2, s:"jako zvíře nebo pták."},
   {x:"-"},
-  {t:94.6, s:"k tomu po smrti také půjdeš.", x:"r"},
-  {t:105.0, s:"Nárájan to řekl v Gítě,", x:"r"},
-  {t:108.5, s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
-  {t:112.0, s:"Koho za života uctíváš,", x:"r"},
-  {t:115.3, s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:104.5, s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:106.8, s:"Nárájan to řekl v Gítě,", x:"r"},
+  {t:110.0, s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
+  {t:113.3, s:"Koho za života uctíváš,", x:"r"},
+  {t:117.7, s:"k tomu po smrti také půjdeš.", x:"r"},
   {x:"-"},
-  {t:118.7, s:"Připojíš-li se k uctívání duchů,"},
-  {t:123.1, s:"zůstaneš v utrpení — a v utrpení i zůstaneš."},
-  {t:129.2, s:"Za života naplněn nemocemi a bolestí,"},
-  {t:134.3, s:"po smrti uvízneš v jejich zajetí."},
-  {t:138.8, s:"Budeš bloudit v milionech nižších zrození,"},
-  {t:144.6, s:"znovu a znovu jako zvíře, pták či hmyz."},
-  {t:150.0, s:"Poneseš s sebou tíhu bolestného utrpení"},
-  {t:155.3, s:"a budeš se toulat jako bhúta a préta."},
+  {t:133.3, s:"Připojíš-li se k uctívání duchů,"},
+  {t:136.7, s:"zůstaneš v utrpení — a v utrpení i zůstaneš."},
+  {t:140.2, s:"Za života naplněn nemocemi a bolestí,"},
+  {t:142.9, s:"po smrti uvízneš v jejich zajetí."},
+  {t:145.4, s:"Budeš bloudit v milionech nižších zrození,"},
+  {t:149.5, s:"znovu a znovu jako zvíře, pták či hmyz."},
+  {t:154.2, s:"Poneseš s sebou tíhu bolestného utrpení"},
+  {t:158.2, s:"a budeš se toulat jako bhúta a préta."},
   {x:"-"},
-  {t:160.4, s:"Koho za života uctíváš,", x:"r"},
-  {t:163.8, s:"k tomu po smrti také půjdeš.", x:"r"},
-  {t:167.3, s:"Nárájan to řekl v Gítě,", x:"r"},
+  {t:162.6, s:"Koho za života uctíváš,", x:"r"},
+  {t:165.3, s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:168.3, s:"Nárájan to řekl v Gítě,", x:"r"},
   {t:170.8, s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
-  {t:174.3, s:"Koho za života uctíváš,", x:"r"},
-  {t:177.7, s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:175.5, s:"Koho za života uctíváš,", x:"r"},
+  {t:178.3, s:"k tomu po smrti také půjdeš.", x:"r"},
   {x:"-"},
-  {t:181.1, s:"Uctíváním prétů a předků,"},
-  {t:184.7, s:"uvězněn v chamtivosti a touze,"},
-  {t:188.9, s:"budeš po statisíce zrození"},
-  {t:192.6, s:"takto bloudit dál,"},
-  {t:195.1, s:"v nižších lůnech, kde není nikoho jiného."},
-  {t:201.0, s:"Nebudeš mít nikoho blízkého,"},
-  {t:204.9, s:"ani přítele či příbuzného,"},
-  {t:208.6, s:"ani nikoho ze svého rodu."},
-  {t:212.2, s:"Nenajde se způsob, jak dosáhnout osvobození."},
-  {t:218.4, s:"Tvá duše bude dál bezcílně putovat ode dveří ke dveřím."},
+  {t:196.1, s:"Uctíváním prétů a předků,"},
+  {t:199.1, s:"uvězněn v chamtivosti a touze,"},
+  {t:202.7, s:"budeš po statisíce zrození"},
+  {t:206.1, s:"takto bloudit dál,"},
+  {t:209.4, s:"v nižších lůnech, kde není nikoho jiného."},
+  {t:212.8, s:"Nebudeš mít nikoho blízkého,"},
+  {t:216.4, s:"ani přítele či příbuzného,"},
+  {t:219.8, s:"ani nikoho ze svého rodu."},
+  {t:223.3, s:"Nenajde se způsob, jak dosáhnout osvobození."},
+  {t:226.7, s:"Tvá duše bude dál bezcílně putovat ode dveří ke dveřím."},
   {x:"-"},
-  {t:226.2, s:"Koho za života uctíváš,", x:"r"},
-  {t:229.6, s:"k tomu po smrti také půjdeš.", x:"r"},
-  {t:233.1, s:"Nárájan to řekl v Gítě,", x:"r"},
-  {t:236.6, s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
-  {t:240.1, s:"Koho za života uctíváš,", x:"r"},
-  {t:243.5, s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:230.6, s:"Koho za života uctíváš,", x:"r"},
+  {t:233.6, s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:234.5, s:"Nárájan to řekl v Gítě,", x:"r"},
+  {t:237.1, s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
+  {t:239.9, s:"Koho za života uctíváš,", x:"r"},
+  {t:243.3, s:"k tomu po smrti také půjdeš.", x:"r"},
   {x:"-"},
-  {t:246.9, s:"Jako pes, kočka, koza,"},
-  {t:251.6, s:"jako hmyz, motýl, zvíře i pták —"},
-  {t:258.4, s:"znovu a znovu se budeš muset rodit."},
-  {t:265.8, s:"Sekán a bit, znovu a znovu umíraje,"},
-  {t:273.3, s:"staneš se i sovou."},
+  {t:261.5, s:"Jako pes, kočka, koza,"},
+  {t:264.9, s:"jako hmyz, motýl, zvíře i pták —"},
+  {t:268.3, s:"znovu a znovu se budeš muset rodit."},
+  {t:271.7, s:"Sekán a bit, znovu a znovu umíraje,"},
+  {t:275.2, s:"staneš se i sovou."},
   {x:"-"},
-  {t:277.1, s:"Koho za života uctíváš,", x:"r"},
-  {t:281.5, s:"k tomu po smrti také půjdeš.", x:"r"},
-  {t:285.0, s:"Nárájan to řekl v Gítě,", x:"r"},
+  {t:279.9, s:"Koho za života uctíváš,", x:"r"},
+  {t:282.2, s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:285.9, s:"Nárájan to řekl v Gítě,", x:"r"},
   {t:288.5, s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
-  {t:292.0, s:"Koho za života uctíváš,", x:"r"},
-  {t:295.4, s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:290.8, s:"Koho za života uctíváš,", x:"r"},
+  {t:296.0, s:"k tomu po smrti také půjdeš.", x:"r"},
   {x:"-"},
-  {t:298.8, s:"Toužíš-li po osvobození,"},
-  {t:303.6, s:"musíš se tomu všemu vyhnout."},
-  {t:309.1, s:"Vzdej se připoutanosti a chamtivosti,"},
-  {t:316.5, s:"vyvaruj se ega."},
-  {t:319.5, s:"Chceš-li z toho dosáhnout osvobození,"},
-  {t:326.9, s:"musíš vstoupit do útočiště Gurua."},
+  {t:313.4, s:"Toužíš-li po osvobození,"},
+  {t:316.7, s:"musíš se tomu všemu vyhnout."},
+  {t:320.2, s:"Vzdej se připoutanosti a chamtivosti,"},
+  {t:323.7, s:"vyvaruj se ega."},
+  {t:327.2, s:"Chceš-li z toho dosáhnout osvobození,"},
+  {t:330.6, s:"musíš vstoupit do útočiště Gurua."},
   {x:"-"},
-  {t:333.5, s:"Koho za života uctíváš,", x:"r"},
-  {t:336.9, s:"k tomu po smrti také půjdeš.", x:"r"},
-  {t:340.4, s:"Nárájan to řekl v Gítě,", x:"r"},
-  {t:343.9, s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
-  {t:347.4, s:"Koho za života uctíváš,", x:"r"},
-  {t:350.7, s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:334.2, s:"Koho za života uctíváš,", x:"r"},
+  {t:337.5, s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:341.2, s:"Nárájan to řekl v Gítě,", x:"r"},
+  {t:344.5, s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
+  {t:348.0, s:"Koho za života uctíváš,", x:"r"},
+  {t:351.3, s:"k tomu po smrti také půjdeš.", x:"r"},
   {x:"-"},
-  {t:354.1, s:"Jakmile nalezneš útočiště Gurua,"},
-  {t:359.0, s:"vzroste v tobě touha poznat sám sebe."},
-  {t:364.6, s:"Kdo jsem? A proč jsem se narodil?"},
-  {t:369.7, s:"Tato žízeň po poznání bude sílit."},
-  {t:374.7, s:"Skrze meditaci, samádhi a službu,"},
-  {t:379.7, s:"jakmile se ustálíš ve vědomí svědka,"},
-  {t:385.2, s:"spatříš celé bytí."},
-  {t:388.0, s:"Službou Guruovi"},
-  {t:390.3, s:"se osvobodíš od chamtivosti a touhy."},
-  {t:395.8, s:"Uzříš sám sebe takového, jaký jsi."},
-  {t:401.0, s:"Osvobodíš se od všech pout."},
-  {t:405.1, s:"Sahasrára se pak otevře."},
-  {t:408.7, s:"Utrpení mnoha zrození skončí."},
-  {t:413.2, s:"Až se rozplyne nevědomost,"},
+  {t:368.8, s:"Jakmile nalezneš útočiště Gurua,"},
+  {t:372.1, s:"vzroste v tobě touha poznat sám sebe."},
+  {t:375.7, s:"Kdo jsem? A proč jsem se narodil?"},
+  {t:379.1, s:"Tato žízeň po poznání bude sílit."},
+  {t:382.7, s:"Skrze meditaci, samádhi a službu,"},
+  {t:386.1, s:"jakmile se ustálíš ve vědomí svědka,"},
+  {t:389.4, s:"spatříš celé bytí."},
+  {t:392.9, s:"Službou Guruovi"},
+  {t:396.3, s:"se osvobodíš od chamtivosti a touhy."},
+  {t:399.8, s:"Uzříš sám sebe takového, jaký jsi."},
+  {t:403.4, s:"Osvobodíš se od všech pout."},
+  {t:406.9, s:"Sahasrára se pak otevře."},
+  {t:410.5, s:"Utrpení mnoha zrození skončí."},
+  {t:413.8, s:"Až se rozplyne nevědomost,"},
   {t:417.1, s:"spatříš Nejvyššího."},
   {x:"-"},
-  {t:420.0, s:"Koho za života uctíváš,", x:"r"},
-  {t:423.4, s:"k tomu po smrti také půjdeš.", x:"r"},
-  {t:427.0, s:"Nárájan to řekl v Gítě,", x:"r"},
-  {t:430.4, s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
-  {t:433.9, s:"Koho za života uctíváš,", x:"r"},
-  {t:437.2, s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:420.6, s:"Koho za života uctíváš,", x:"r"},
+  {t:424.2, s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:427.7, s:"Nárájan to řekl v Gítě,", x:"r"},
+  {t:431.0, s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
+  {t:434.5, s:"Koho za života uctíváš,", x:"r"},
+  {t:437.9, s:"k tomu po smrti také půjdeš.", x:"r"},
   {x:"-"},
-  {t:440.6, s:"Chceš-li uniknout všem těmto zmatkům,"},
-  {t:446.9, s:"budeš muset přijmout útočiště Šivy."},
-  {t:452.8, s:"Útočiště Šivy je mým útočištěm."},
-  {t:458.1, s:"Budeš-li tomu skutečně věřit,"},
-  {t:463.0, s:"pak vězte všichni s jistotou:"},
-  {t:468.0, s:"poznání a samádhi dosáhnete ještě za života."},
+  {t:455.5, s:"Chceš-li uniknout všem těmto zmatkům,"},
+  {t:458.7, s:"budeš muset přijmout útočiště Šivy."},
+  {t:462.2, s:"Útočiště Šivy je mým útočištěm."},
+  {t:465.6, s:"Budeš-li tomu skutečně věřit,"},
+  {t:469.1, s:"pak vězte všichni s jistotou:"},
+  {t:472.5, s:"poznání a samádhi dosáhnete ještě za života."},
   {x:"-"},
-  {t:475.4, s:"Koho za života uctíváš,", x:"r"},
-  {t:478.9, s:"k tomu po smrti také půjdeš.", x:"r"},
-  {t:482.4, s:"Nárájan to řekl v Gítě,", x:"r"},
-  {t:485.8, s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
-  {t:489.3, s:"Koho za života uctíváš,", x:"r"},
-  {t:492.6, s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:476.0, s:"Koho za života uctíváš,", x:"r"},
+  {t:479.4, s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:482.9, s:"Nárájan to řekl v Gítě,", x:"r"},
+  {t:485.6, s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
+  {t:489.9, s:"Koho za života uctíváš,", x:"r"},
+  {t:493.3, s:"k tomu po smrti také půjdeš.", x:"r"},
   {x:"-"},
-  {t:496.0, s:"Až se osvobodíš od chamtivosti a touhy,"},
-  {t:504.6, s:"dojdeš uskutečnění."},
-  {t:508.8, s:"Právě proto jsi přijal toto tělo —"},
-  {t:516.3, s:"naplň smysl tohoto lidského života."},
+  {t:510.7, s:"Až se osvobodíš od chamtivosti a touhy,"},
+  {t:514.1, s:"dojdeš uskutečnění."},
+  {t:517.5, s:"Právě proto jsi přijal toto tělo —"},
+  {t:521.1, s:"naplň smysl tohoto lidského života."},
   {x:"-"},
-  {t:523.9, s:"Koho za života uctíváš,", x:"r"},
-  {t:527.4, s:"k tomu po smrti také půjdeš.", x:"r"},
-  {t:530.8, s:"Nárájan to řekl v Gítě,", x:"r"},
-  {t:534.5, s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
-  {t:537.8, s:"Koho za života uctíváš,", x:"r"},
-  {t:541.2, s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:524.5, s:"Koho za života uctíváš,", x:"r"},
+  {t:527.9, s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:531.5, s:"Nárájan to řekl v Gítě,", x:"r"},
+  {t:534.8, s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
+  {t:538.5, s:"Koho za života uctíváš,", x:"r"},
+  {t:541.7, s:"k tomu po smrti také půjdeš.", x:"r"},
   {x:"-"},
-  {t:544.6, s:"Karauli Šankar promlouvá s úsměvem,"},
-  {t:550.4, s:"z prahu mathu praví,"},
-  {t:553.7, s:"znovu a znovu Karauli Šankar praví:"},
-  {t:559.5, s:"Vytrvale praktikuj meditaci a sádhanu."},
-  {t:565.7, s:"Věnujte pozornost, meditujte všichni."},
-  {t:571.8, s:"Až se osvobodíš od světskosti,"},
-  {t:576.8, s:"spadnou i okovy nevědomosti."},
-  {t:581.4, s:"Nalezneš štěstí, klid a spokojenost."},
-  {t:587.3, s:"Znovu zazní volání Hari-Har,"},
-  {t:591.9, s:"blaženost naplní každý dům."},
-  {t:596.4, s:"Tehdy poznáš sám sebe"},
-  {t:599.8, s:"a zůstaneš svobodný od chamtivosti a touhy."},
+  {t:559.3, s:"Karauli Šankar promlouvá s úsměvem,"},
+  {t:569.8, s:"z prahu mathu praví,"},
+  {t:573.0, s:"znovu a znovu Karauli Šankar praví:"},
+  {t:576.5, s:"Vytrvale praktikuj meditaci a sádhanu."},
+  {t:579.9, s:"Věnujte pozornost, meditujte všichni."},
+  {t:583.4, s:"Až se osvobodíš od světskosti,"},
+  {t:586.7, s:"spadnou i okovy nevědomosti."},
+  {t:590.3, s:"Nalezneš štěstí, klid a spokojenost."},
+  {t:593.7, s:"Znovu zazní volání Hari-Har,"},
+  {t:597.2, s:"blaženost naplní každý dům."},
+  {t:600.6, s:"Tehdy poznáš sám sebe"},
+  {t:604.2, s:"a zůstaneš svobodný od chamtivosti a touhy."},
   {x:"-"},
-  {t:606.9, s:"Koho za života uctíváš,", x:"r"},
-  {t:610.4, s:"k tomu po smrti také půjdeš.", x:"r"},
-  {t:613.9, s:"Nárájan to řekl v Gítě,", x:"r"},
-  {t:617.4, s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
-  {t:620.8, s:"Koho za života uctíváš,", x:"r"},
+  {t:607.6, s:"Koho za života uctíváš,", x:"r"},
+  {t:611.0, s:"k tomu po smrti také půjdeš.", x:"r"},
+  {t:614.5, s:"Nárájan to řekl v Gítě,", x:"r"},
+  {t:617.9, s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
+  {t:621.4, s:"Koho za života uctíváš,", x:"r"},
   {t:624.3, s:"k tomu po smrti také půjdeš.", x:"r"},
-  {x:"-"},
-  {t:657.3, s:"Nárájan to řekl v Gítě,", x:"r"},
-  {t:661.0, s:"ve verši 9.25 to jasně vysvětlil.", x:"r"},
-  {t:665.1, s:"Koho za života uctíváš,", x:"r"},
-  {t:669.8, s:"k tomu po smrti také půjdeš.", x:"r"},
-  {x:"-"},
 ];
 
 /* ---------- Build DOM ---------- */
@@ -530,14 +400,9 @@ L.forEach((row, i) => {
   el.className = 'line' + (row.x === 'r' ? ' refrain' : '');
   el.dataset.i = i;
 
-  const stamp = document.createElement('span');
-  stamp.className = 'stamp';
-  stamp.textContent = fmt(row.t);
-  el.appendChild(stamp);
-
   el.appendChild(document.createTextNode(row.s));
   box.appendChild(el);
-  nodes.push({ el, i, stamp });
+  nodes.push({ el, i });
 });
 
 function fmt(t) {
@@ -548,19 +413,7 @@ function fmt(t) {
 
 /* ---------- State ---------- */
 let follow  = true;
-let editing = false;
 let current = -1;
-let cue     = 0;      // který řádek je "na řadě" k otagování
-const undo  = [];     // historie zápisů
-
-const btnFollow = document.getElementById('btnFollow');
-const btnEdit   = document.getElementById('btnEdit');
-const btnExport = document.getElementById('btnExport');
-const btnTap    = document.getElementById('btnTap');
-const btnUndo   = document.getElementById('btnUndo');
-const hint      = document.getElementById('hint');
-const out       = document.getElementById('out');
-const outText   = document.getElementById('outText');
 
 /* ---------- Sync loop ---------- */
 function tick() {
@@ -572,11 +425,10 @@ function tick() {
   if (idx !== current) {
     current = idx;
     nodes.forEach((n, k) => {
-      // V editaci nezvýrazňujeme "active" — vede to jen cue kurzor.
-      n.el.classList.toggle('active', !editing && k === idx);
-      n.el.classList.toggle('past',   !editing && k < idx);
+      n.el.classList.toggle('active', k === idx);
+      n.el.classList.toggle('past',   k < idx);
     });
-    if (follow && !editing && idx >= 0) {
+    if (follow && idx >= 0) {
       nodes[idx].el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }
@@ -584,119 +436,31 @@ function tick() {
 }
 requestAnimationFrame(tick);
 
-/* ---------- Click a line ---------- */
-/* Klik na řádek = VŽDY jen skok v audiu. Nikdy nic nepřepíše.
-   V editaci navíc nastaví "kurzor" na tento řádek — tedy odkud
-   se bude pokračovat v zapisování časů.                        */
+/* ---------- Klik na radek = skok v audiu ---------- */
 box.addEventListener('click', e => {
   const el = e.target.closest('.line');
   if (!el || el.classList.contains('gap')) return;
   const k = nodes.findIndex(n => n.el === el);
-
   audio.currentTime = L[nodes[k].i].t;
-  if (editing) { cue = k; paint(); }
   audio.play();
 });
 
-/* Zápis času na "cue" řádek, pak posun kurzoru na další. */
-function tap() {
-  if (!editing || cue < 0 || cue >= nodes.length) return;
-  const i = nodes[cue].i;
-  undo.push({ cue, t: L[i].t });        // uložit pro Zpět
-  L[i].t = Math.round(audio.currentTime * 10) / 10;
-  nodes[cue].stamp.textContent = fmt(L[i].t);
-  cue++;
-  paint();
-  if (cue < nodes.length) {
-    nodes[cue].el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
+/* ---------- Auto-scroll pauza pri rucnim scrollovani ---------- */
+let scrollTimer = null;
+window.addEventListener('wheel',     pauseFollow, { passive: true });
+window.addEventListener('touchmove', pauseFollow, { passive: true });
+
+function pauseFollow() {
+  follow = false;
+  clearTimeout(scrollTimer);
+  scrollTimer = setTimeout(() => { follow = true; current = -2; }, 4000);
 }
 
-function undoTap() {
-  const u = undo.pop();
-  if (!u) return;
-  const i = nodes[u.cue].i;
-  L[i].t = u.t;
-  nodes[u.cue].stamp.textContent = fmt(u.t);
-  cue = u.cue;
-  paint();
-  nodes[cue].el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-function paint() {
-  nodes.forEach((n, k) => n.el.classList.toggle('cue', editing && k === cue));
-  btnTap.disabled = !editing || cue >= nodes.length;
-  btnUndo.disabled = undo.length === 0;
-  if (editing) {
-    hint.textContent = cue >= nodes.length
-      ? 'Hotovo — všechny řádky otagovány. Klikni Export.'
-      : `Řádek ${cue + 1} / ${nodes.length} — mezerník zapíše čas`;
-  }
-  current = -2;
-}
-
-/* ---------- Buttons ---------- */
-btnFollow.onclick = () => {
-  follow = !follow;
-  btnFollow.classList.toggle('on', follow);
-};
-
-btnEdit.onclick = () => {
-  editing = !editing;
-  document.body.classList.toggle('editing', editing);
-  btnEdit.classList.toggle('on', editing);
-  if (editing) {
-    follow = false;
-    btnFollow.classList.remove('on');
-    // kurzor začne na řádku, který zrovna hraje (nebo od začátku)
-    cue = Math.max(0, current);
-    audio.currentTime = L[nodes[cue].i].t;
-  } else {
-    nodes.forEach(n => n.el.classList.remove('cue'));
-  }
-  paint();
-};
-
-btnTap.onclick  = tap;
-btnUndo.onclick = undoTap;
-
-paint();   // výchozí stav tlačítek
-
-btnExport.onclick = () => {
-  const lines = L.map(r => {
-    if (r.x === '-') return '  {x:"-"},';
-    const xa = r.x === 'r' ? ', x:"r"' : '';
-    return `  {t:${r.t.toFixed(1)}, s:${JSON.stringify(r.s)}${xa}},`;
-  });
-  outText.value = 'const L = [\n' + lines.join('\n') + '\n];';
-  out.style.display = out.style.display === 'block' ? 'none' : 'block';
-  if (out.style.display === 'block') {
-    outText.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    outText.select();
-  }
-};
-
-/* ---------- Keyboard ---------- */
+/* ---------- Klavesnice ---------- */
 document.addEventListener('keydown', e => {
-  if (e.target.tagName === 'TEXTAREA') return;
-
-  if (e.code === 'Space') {
-    e.preventDefault();
-    if (editing) tap();                                   // v editaci = zapsat čas
-    else audio.paused ? audio.play() : audio.pause();     // jinak = play/pauza
-    return;
-  }
-
-  // Zpět: Cmd/Ctrl + Z
-  if (e.code === 'KeyZ' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); undoTap(); return; }
-
-  // Play/pauza v editaci: P
-  if (e.code === 'KeyP') { e.preventDefault(); audio.paused ? audio.play() : audio.pause(); return; }
-
-  if (e.code === 'ArrowLeft')  { audio.currentTime -= 3; }
-  if (e.code === 'ArrowRight') { audio.currentTime += 3; }
-  if (e.code === 'ArrowDown')  { e.preventDefault(); if (editing && cue < nodes.length-1) { cue++; paint(); nodes[cue].el.scrollIntoView({behavior:'smooth',block:'center'}); } }
-  if (e.code === 'ArrowUp')    { e.preventDefault(); if (editing && cue > 0) { cue--; paint(); nodes[cue].el.scrollIntoView({behavior:'smooth',block:'center'}); } }
+  if (e.code === 'Space')      { e.preventDefault(); audio.paused ? audio.play() : audio.pause(); }
+  if (e.code === 'ArrowLeft')  { audio.currentTime -= 5; }
+  if (e.code === 'ArrowRight') { audio.currentTime += 5; }
 });
 </script>
 </body>
