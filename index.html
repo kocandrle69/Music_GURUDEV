@@ -217,16 +217,24 @@
     border-color: var(--accent);
   }
 
+  /* Řádek, který je "na řadě" k otagování */
+  .line.cue {
+    color: var(--text) !important;
+    background: rgba(232,176,75,0.10);
+    box-shadow: inset 3px 0 0 var(--accent);
+    transform: none !important;
+  }
+
   .hint {
     position: fixed;
-    bottom: 68px;
-    bottom: calc(68px + env(safe-area-inset-bottom));
+    bottom: 122px;
+    bottom: calc(122px + env(safe-area-inset-bottom));
     left: 50%;
     transform: translateX(-50%);
     z-index: 29;
     font-size: 11px;
     color: var(--text-dim);
-    background: rgba(13,11,18,0.9);
+    background: rgba(13,11,18,0.92);
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 999px;
     padding: 7px 14px;
@@ -236,6 +244,43 @@
   }
 
   body.editing .hint { display: block; }
+
+  /* Velké tlačítko zápisu (jen v editaci) */
+  .tapbar {
+    display: none;
+    position: fixed;
+    bottom: 62px;
+    bottom: calc(62px + env(safe-area-inset-bottom));
+    left: 0;
+    right: 0;
+    z-index: 28;
+    padding: 0 16px 10px;
+  }
+
+  body.editing .tapbar { display: block; }
+
+  .tapbar-inner {
+    max-width: 640px;
+    margin: 0 auto;
+    display: flex;
+    gap: 8px;
+  }
+
+  #btnTap {
+    flex: 3;
+    font-size: 15px;
+    padding: 16px 8px;
+    color: var(--bg);
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  #btnTap:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  #btnUndo { flex: 1; }
 
   #out {
     display: none;
@@ -274,12 +319,18 @@
 
 <div class="lyrics" id="lyrics"></div>
 
-<div class="hint" id="hint">Klikni na řádek = zapsat aktuální čas</div>
+<div class="hint" id="hint"></div>
+
+<div class="tapbar">
+  <div class="tapbar-inner">
+    <button id="btnTap">Zapsat čas ⏎</button>
+    <button id="btnUndo">Zpět</button>
+  </div>
+</div>
 
 <div class="toolbar">
   <button id="btnFollow" class="on">Sledovat</button>
   <button id="btnEdit">Upravit časy</button>
-  <button id="btnShift">Posun ⏭</button>
   <button id="btnExport">Export</button>
 </div>
 
@@ -484,15 +535,17 @@ function fmt(t) {
 }
 
 /* ---------- State ---------- */
-let follow    = true;
-let editing   = false;
-let shiftMode = false;
-let current   = -1;
+let follow  = true;
+let editing = false;
+let current = -1;
+let cue     = 0;      // který řádek je "na řadě" k otagování
+const undo  = [];     // historie zápisů
 
 const btnFollow = document.getElementById('btnFollow');
 const btnEdit   = document.getElementById('btnEdit');
-const btnShift  = document.getElementById('btnShift');
 const btnExport = document.getElementById('btnExport');
+const btnTap    = document.getElementById('btnTap');
+const btnUndo   = document.getElementById('btnUndo');
 const hint      = document.getElementById('hint');
 const out       = document.getElementById('out');
 const outText   = document.getElementById('outText');
@@ -507,8 +560,9 @@ function tick() {
   if (idx !== current) {
     current = idx;
     nodes.forEach((n, k) => {
-      n.el.classList.toggle('active', k === idx);
-      n.el.classList.toggle('past', k < idx);
+      // V editaci nezvýrazňujeme "active" — vede to jen cue kurzor.
+      n.el.classList.toggle('active', !editing && k === idx);
+      n.el.classList.toggle('past',   !editing && k < idx);
     });
     if (follow && !editing && idx >= 0) {
       nodes[idx].el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -519,36 +573,55 @@ function tick() {
 requestAnimationFrame(tick);
 
 /* ---------- Click a line ---------- */
+/* Klik na řádek = VŽDY jen skok v audiu. Nikdy nic nepřepíše.
+   V editaci navíc nastaví "kurzor" na tento řádek — tedy odkud
+   se bude pokračovat v zapisování časů.                        */
 box.addEventListener('click', e => {
   const el = e.target.closest('.line');
   if (!el || el.classList.contains('gap')) return;
-  const i = +el.dataset.i;
+  const k = nodes.findIndex(n => n.el === el);
 
-  if (!editing) {
-    audio.currentTime = L[i].t;
-    audio.play();
-    return;
-  }
-
-  const now = Math.round(audio.currentTime * 10) / 10;
-
-  if (shiftMode) {
-    // Posun tohoto řádku i všech následujících o stejný rozdíl
-    const delta = now - L[i].t;
-    L.forEach((r, k) => {
-      if (k >= i && r.x !== '-') {
-        r.t = Math.round((r.t + delta) * 10) / 10;
-      }
-    });
-    nodes.forEach(n => { n.stamp.textContent = fmt(L[n.i].t); });
-  } else {
-    // Posun jen tohoto jednoho řádku
-    L[i].t = now;
-    nodes.find(n => n.i === i).stamp.textContent = fmt(now);
-  }
-
-  current = -2;   // force re-eval
+  audio.currentTime = L[nodes[k].i].t;
+  if (editing) { cue = k; paint(); }
+  audio.play();
 });
+
+/* Zápis času na "cue" řádek, pak posun kurzoru na další. */
+function tap() {
+  if (!editing || cue < 0 || cue >= nodes.length) return;
+  const i = nodes[cue].i;
+  undo.push({ cue, t: L[i].t });        // uložit pro Zpět
+  L[i].t = Math.round(audio.currentTime * 10) / 10;
+  nodes[cue].stamp.textContent = fmt(L[i].t);
+  cue++;
+  paint();
+  if (cue < nodes.length) {
+    nodes[cue].el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function undoTap() {
+  const u = undo.pop();
+  if (!u) return;
+  const i = nodes[u.cue].i;
+  L[i].t = u.t;
+  nodes[u.cue].stamp.textContent = fmt(u.t);
+  cue = u.cue;
+  paint();
+  nodes[cue].el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function paint() {
+  nodes.forEach((n, k) => n.el.classList.toggle('cue', editing && k === cue));
+  btnTap.disabled = !editing || cue >= nodes.length;
+  btnUndo.disabled = undo.length === 0;
+  if (editing) {
+    hint.textContent = cue >= nodes.length
+      ? 'Hotovo — všechny řádky otagovány. Klikni Export.'
+      : `Řádek ${cue + 1} / ${nodes.length} — mezerník zapíše čas`;
+  }
+  current = -2;
+}
 
 /* ---------- Buttons ---------- */
 btnFollow.onclick = () => {
@@ -560,24 +633,22 @@ btnEdit.onclick = () => {
   editing = !editing;
   document.body.classList.toggle('editing', editing);
   btnEdit.classList.toggle('on', editing);
-  if (editing) { follow = false; btnFollow.classList.remove('on'); }
-  else { shiftMode = false; btnShift.classList.remove('on'); }
-  updateHint();
+  if (editing) {
+    follow = false;
+    btnFollow.classList.remove('on');
+    // kurzor začne na řádku, který zrovna hraje (nebo od začátku)
+    cue = Math.max(0, current);
+    audio.currentTime = L[nodes[cue].i].t;
+  } else {
+    nodes.forEach(n => n.el.classList.remove('cue'));
+  }
+  paint();
 };
 
-btnShift.onclick = () => {
-  shiftMode = !shiftMode;
-  btnShift.classList.toggle('on', shiftMode);
-  if (shiftMode && !editing) btnEdit.onclick();   // posun dává smysl jen v editaci
-  updateHint();
-};
+btnTap.onclick  = tap;
+btnUndo.onclick = undoTap;
 
-function updateHint() {
-  hint.textContent = shiftMode
-    ? 'Klik na řádek = posunout ho i VŠECHNY následující'
-    : 'Klik na řádek = zapsat aktuální čas (jen tento řádek)';
-}
-updateHint();
+paint();   // výchozí stav tlačítek
 
 btnExport.onclick = () => {
   const lines = L.map(r => {
@@ -596,9 +667,24 @@ btnExport.onclick = () => {
 /* ---------- Keyboard ---------- */
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'TEXTAREA') return;
-  if (e.code === 'Space')      { e.preventDefault(); audio.paused ? audio.play() : audio.pause(); }
+
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (editing) tap();                                   // v editaci = zapsat čas
+    else audio.paused ? audio.play() : audio.pause();     // jinak = play/pauza
+    return;
+  }
+
+  // Zpět: Cmd/Ctrl + Z
+  if (e.code === 'KeyZ' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); undoTap(); return; }
+
+  // Play/pauza v editaci: P
+  if (e.code === 'KeyP') { e.preventDefault(); audio.paused ? audio.play() : audio.pause(); return; }
+
   if (e.code === 'ArrowLeft')  { audio.currentTime -= 3; }
   if (e.code === 'ArrowRight') { audio.currentTime += 3; }
+  if (e.code === 'ArrowDown')  { e.preventDefault(); if (editing && cue < nodes.length-1) { cue++; paint(); nodes[cue].el.scrollIntoView({behavior:'smooth',block:'center'}); } }
+  if (e.code === 'ArrowUp')    { e.preventDefault(); if (editing && cue > 0) { cue--; paint(); nodes[cue].el.scrollIntoView({behavior:'smooth',block:'center'}); } }
 });
 </script>
 </body>
